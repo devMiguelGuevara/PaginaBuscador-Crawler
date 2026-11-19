@@ -1,0 +1,32 @@
+[project]
+name = "paginabuscador-crawler"
+version = "0.1.0"
+description = "Crawler y analizador de sitios web: páginas, áreas, tecnologías, diseño, interacción y login."
+requires-python = ">=3.11"
+dependencies = [
+    "httpx[http2]>=0.27",
+    "selectolax>=0.3.21",
+    "playwright>=1.45",
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "rich>=13.7",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+crawler = "crawler.__main__:app"
+
+[tool.setuptools.packages.find]
+include = ["crawler*"]
+
+[tool.setuptools.package-data]
+crawler = ["fingerprints/*.json", "report/templates/*", "web/templates/*", "web/static/*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

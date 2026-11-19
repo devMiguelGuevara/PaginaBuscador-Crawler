@@ -1,0 +1,31 @@
+# Entornos virtuales
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Reportes generados (contienen capturas y datos de sitios de terceros)
+output/
+
+# Claves y configuración local
+.env
+.env.*
+!.env.example
+cookies*.txt
+
+# Editores y sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.log

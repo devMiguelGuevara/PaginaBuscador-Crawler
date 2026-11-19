@@ -1,0 +1,73 @@
+(function () {
+  // Resalta la sección visible en la navegación lateral.
+  var links = Array.prototype.slice.call(document.querySelectorAll("nav.side a"));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+  if ("IntersectionObserver" in window) {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting && byId[e.target.id]) {
+          links.forEach(function (l) { l.classList.remove("active"); });
+          byId[e.target.id].classList.add("active");
+        }
+      });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+    document.querySelectorAll("main section[id]").forEach(function (s) { obs.observe(s); });
+  }
+
+  // Ordenar tablas por columna.
+  function cellValue(row, idx) {
+    var cell = row.children[idx];
+    if (!cell) return "";
+    var raw = cell.getAttribute("data-v");
+    if (raw === null) raw = cell.textContent.trim();
+    var n = parseFloat(raw.replace(/[^0-9.\-]/g, ""));
+    return (raw !== "" && /^[\s\d.,\-%a-zA-Z]*$/.test(raw) && !isNaN(n) && /\d/.test(raw) && cell.classList.contains("num")) ? n : raw.toLowerCase();
+  }
+  document.querySelectorAll("table.sortable-table").forEach(function (table) {
+    table.querySelectorAll("th.sortable").forEach(function (th) {
+      th.addEventListener("click", function () {
+        var idx = Array.prototype.indexOf.call(th.parentNode.children, th);
+        var asc = th.getAttribute("data-dir") !== "asc";
+        th.parentNode.querySelectorAll("th").forEach(function (h) { h.removeAttribute("data-dir"); });
+        th.setAttribute("data-dir", asc ? "asc" : "desc");
+        var body = table.tBodies[0];
+        var rows = Array.prototype.slice.call(body.rows);
+        rows.sort(function (a, b) {
+          var x = cellValue(a, idx), y = cellValue(b, idx);
+          if (x < y) return asc ? -1 : 1;
+          if (x > y) return asc ? 1 : -1;
+          return 0;
+        });
+        rows.forEach(function (r) { body.appendChild(r); });
+      });
+    });
+  });
+
+  // Filtro del inventario.
+  var q = document.getElementById("inv-q");
+  var st = document.getElementById("inv-status");
+  var ty = document.getElementById("inv-type");
+  var count = document.getElementById("inv-count");
+  function applyFilter() {
+    var text = (q && q.value || "").toLowerCase();
+    var s = st ? st.value : "";
+    var t = ty ? ty.value : "";
+    var shown = 0;
+    document.querySelectorAll("#inv-table tbody tr").forEach(function (tr) {
+      var ok = (!text || tr.getAttribute("data-search").indexOf(text) !== -1) &&
+               (!s || tr.getAttribute("data-status-group") === s) &&
+               (!t || tr.getAttribute("data-type") === t);
+      tr.hidden = !ok;
+      if (ok) shown++;
+    });
+    if (count) count.textContent = shown;
+  }
+  [q, st, ty].forEach(function (el) { if (el) el.addEventListener("input", applyFilter); });
+  applyFilter();
+
+  // Al imprimir, abre todos los <details>.
+  window.addEventListener("beforeprint", function () {
+    document.querySelectorAll("details").forEach(function (d) { d.setAttribute("open", ""); });
+  });
+})();

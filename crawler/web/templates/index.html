@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PaginaBuscador Crawler</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <h1>PaginaBuscador <span>Crawler</span></h1>
+    <p>Analiza un sitio web: páginas, áreas, tecnologías, diseño, interacción, login y usuarios.</p>
+  </div>
+</header>
+<main class="wrap">
+  <form id="scan-form" class="card" autocomplete="off">
+    <div class="url-row">
+      <input id="url" name="start_url" type="text" placeholder="https://ejemplo.com" required autofocus>
+      <button type="submit" id="start-btn">Analizar</button>
+    </div>
+    <details class="opts">
+      <summary>Opciones avanzadas</summary>
+      <div class="opts-grid">
+        <label>Máx. páginas<input type="number" name="max_pages" min="1" max="5000" value="{{ defaults.max_pages }}"></label>
+        <label>Profundidad<input type="number" name="max_depth" min="0" max="50" value="{{ defaults.max_depth }}"></label>
+        <label>Concurrencia<input type="number" name="concurrency" min="1" max="64" value="{{ defaults.concurrency }}"></label>
+        <label>Retardo (s)<input type="number" name="delay" min="0" step="0.1" value="{{ defaults.delay }}"></label>
+        <label>Render JS
+          <select name="render">
+            <option value="auto" selected>Automático (detecta SPA)</option>
+            <option value="always">Siempre (navegador)</option>
+            <option value="never">Nunca (solo HTTP)</option>
+          </select>
+        </label>
+        <label>Capturas<input type="number" name="screenshots" min="0" max="100" value="{{ defaults.screenshots }}"></label>
+        <label class="chk"><input type="checkbox" name="respect_robots" checked> Respetar robots.txt</label>
+        <label class="chk"><input type="checkbox" name="use_sitemap" checked> Usar sitemap.xml</label>
+        <label class="chk"><input type="checkbox" name="include_subdomains"> Incluir subdominios</label>
+        <label class="chk"><input type="checkbox" name="pdf"> Generar PDF</label>
+      </div>
+    </details>
+    <div id="form-error" class="error" hidden></div>
+  </form>
+
+  <section id="progress" class="card" hidden>
+    <div class="prog-head">
+      <div>
+        <div id="prog-title" class="prog-title">Escaneando…</div>
+        <div id="prog-phase" class="muted small"></div>
+      </div>
+      <div class="prog-actions">
+        <button id="cancel-btn" class="ghost" type="button">Cancelar</button>
+        <a id="open-report" class="btn" target="_blank" hidden>Abrir reporte</a>
+        <a id="open-json" class="btn ghost" target="_blank" hidden>JSON</a>
+        <a id="open-pdf" class="btn ghost" target="_blank" hidden>PDF</a>
+      </div>
+    </div>
+    <div class="bar"><span id="bar-fill"></span></div>
+    <div class="counters small">
+      <span><strong id="c-done">0</strong> páginas</span>
+      <span><strong id="c-queued">0</strong> en cola</span>
+      <span>máx. <strong id="c-max">0</strong></span>
+      <span><strong id="c-js">0</strong> con navegador</span>
+      <span><strong id="c-err">0</strong> errores</span>
+    </div>
+    <ul id="summary" class="summary" hidden></ul>
+    <div id="log" class="log" aria-live="polite"></div>
+  </section>
+
+  <section class="card">
+    <div class="hist-head"><h2>Historial</h2><button id="refresh" class="ghost small-btn" type="button">Actualizar</button></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>URL</th><th>Estado</th><th>Páginas</th><th>Reporte</th></tr></thead>
+        <tbody id="history"><tr><td colspan="5" class="muted">Sin escaneos todavía.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+  <p class="muted small foot">Análisis pasivo: solo sigue enlaces públicos, respeta robots.txt y no inicia sesión.</p>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

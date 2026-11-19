@@ -1,0 +1,250 @@
+{% set it = r.interactions %}
+<!-- 5 INTERACCIÓN -->
+<section id="interaccion">
+  <h2>5. Interacción</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="v">{{ r.forms|length }}</div><div class="l">Formularios únicos</div></div>
+    <div class="kpi"><div class="v">{{ r.api_endpoints|length }}</div><div class="l">Endpoints API</div></div>
+    <div class="kpi"><div class="v">{{ "Sí" if it.get("search") else "No" }}</div><div class="l">Buscador</div></div>
+    <div class="kpi"><div class="v">{{ "Sí" if it.get("graphql") else "No" }}</div><div class="l">GraphQL</div></div>
+    <div class="kpi"><div class="v">{{ (it.get("websockets") or [])|length }}</div><div class="l">WebSockets</div></div>
+    <div class="kpi"><div class="v">{{ "Sí" if it.get("cookie_banner") else "No" }}</div><div class="l">Banner cookies</div></div>
+    <div class="kpi"><div class="v">{{ it.get("modals", 0) }}</div><div class="l">Modales</div></div>
+    <div class="kpi"><div class="v">{{ it.get("event_handlers", 0) }}</div><div class="l">Handlers JS inline</div></div>
+  </div>
+
+  <h3>Formularios</h3>
+  {% set fp = it.get("form_pages") or [] %}
+  {% if r.forms %}
+  <div class="grid g2">
+  {% for f in r.forms[:60] %}
+    <div class="form-card">
+      <div class="hd">
+        <div><span class="tag acc">{{ f.kind|form_kind }}</span> <strong>{{ f.method|upper }}</strong> <code>{{ f.action|short_url(50) if f.action else "(misma página)" }}</code></div>
+        <div>{% if f.has_csrf %}<span class="tag good">CSRF {{ f.csrf_field }}</span>{% endif %}{% if f.captcha %}<span class="tag mid">{{ f.captcha }}</span>{% endif %}</div>
+      </div>
+      <div class="small muted">En <a href="{{ f.page_url }}" target="_blank" rel="noopener">{{ f.page_url|short_url(60) }}</a>{% if f.submit_text %} · botón «{{ f.submit_text }}»{% endif %}{% if fp|length > loop.index0 and fp[loop.index0] > 1 %} · <strong>presente en {{ fp[loop.index0] }} páginas</strong>{% endif %}</div>
+      {% if f.fields %}
+      <table style="margin-top:8px"><thead><tr><th>Campo</th><th>Tipo</th><th>Etiqueta</th><th>Req.</th></tr></thead><tbody>
+      {% for fl in f.fields %}<tr><td><code>{{ fl.name or "—" }}</code></td><td>{{ fl.type }}</td><td class="small">{{ fl.label or fl.placeholder or "—" }}</td><td>{{ "✔" if fl.required else "" }}</td></tr>{% endfor %}
+      </tbody></table>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+  {% else %}{{ empty("No se encontraron formularios") }}{% endif %}
+
+  <h3>Endpoints de API y llamadas de red</h3>
+  {% if r.api_endpoints %}
+  <div class="table-wrap"><table class="sortable-table">
+    <thead><tr><th class="sortable">Método</th><th class="sortable">URL</th><th class="sortable">Tipo</th><th class="sortable">Estado</th><th>Content-Type</th><th>Origen</th></tr></thead>
+    <tbody>{% for c in r.api_endpoints[:300] %}<tr>
+      <td><strong>{{ c.method }}</strong></td>
+      <td class="small"><code>{{ c.url|truncate(110) }}</code>{% if c.graphql %} <span class="tag acc">GraphQL</span>{% endif %}</td>
+      <td>{{ c.resource_type }}</td><td class="num {{ c.status|status_class }}">{{ c.status or "—" }}</td>
+      <td class="small muted">{{ c.content_type|truncate(40) }}</td>
+      <td>{% if c.third_party %}<span class="tag mid">tercero</span>{% else %}<span class="tag good">propio</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}{{ empty("No se capturaron llamadas XHR/fetch (requiere renderizado con navegador)") }}{% endif %}
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><dl class="kv">
+      <dt>Llamadas a la acción</dt><dd>{{ tags((it.get("ctas") or [])[:25]) }}</dd>
+      <dt>Chat / soporte</dt><dd>{{ tags(it.get("chat_widgets"), "acc") }}</dd>
+      <dt>WebSockets</dt><dd>{% for w in it.get("websockets") or [] %}<div><code>{{ w }}</code></div>{% else %}{{ empty() }}{% endfor %}</dd>
+      <dt>Descargas</dt><dd>{% for d in (it.get("downloads") or [])[:15] %}<div class="small"><a href="{{ d }}" target="_blank" rel="noopener">{{ d|short_url(60) }}</a></div>{% else %}{{ empty() }}{% endfor %}</dd>
+    </dl></div>
+    <div class="card"><dl class="kv">
+      <dt>Analítica / tracking</dt><dd>{{ tags(it.get("analytics"), "mid") }}</dd>
+      <dt>Redes sociales</dt><dd>{{ tags(it.get("social")) }}</dd>
+      <dt>Video</dt><dd>{{ tags(it.get("video")) }}</dd>
+      <dt>Servicios de terceros</dt><dd>{{ tags(it.get("third_party_services")) }}</dd>
+    </dl></div>
+  </div>
+</section>
+
+<!-- 6 DISEÑO -->
+{% set d = r.design %}
+<section id="diseno">
+  <h2>6. Diseño</h2>
+  <h3>Capturas de pantalla</h3>
+  {% if screens %}
+  <div class="shots">
+  {% for s in screens %}
+    <div class="shot">
+      <div class="small" style="margin-bottom:8px"><strong>{{ s.title or s.url|short_url }}</strong> <span class="muted">{{ s.url|short_url(60) }}</span></div>
+      <div class="imgs">
+        {% if s.desktop %}<div class="d"><div class="small muted">Escritorio</div><img loading="lazy" src="{{ s.desktop }}" alt="Captura escritorio de {{ s.url }}"></div>{% endif %}
+        {% if s.mobile %}<div class="m"><div class="small muted">Móvil</div><img loading="lazy" src="{{ s.mobile }}" alt="Captura móvil de {{ s.url }}"></div>{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+  {% else %}{{ empty("Sin capturas (requiere Playwright / render)") }}{% endif %}
+
+  <h3>Paleta de colores</h3>
+  {% if d.colors %}
+  <div class="swatches">{% for c, n in d.colors.items() %}{% if loop.index <= 24 %}<div class="sw"><div class="c" style="background:{{ c }}"></div><div class="h">{{ c }}</div><div class="muted">× {{ n }}</div></div>{% endif %}{% endfor %}</div>
+  {% else %}{{ empty() }}{% endif %}
+  {% if d.computed_colors %}
+  <h3>Colores computados (navegador)</h3>
+  <div class="swatches">{% for role, c in d.computed_colors.items() %}<div class="sw"><div class="c" style="background:{{ c }}"></div><div class="h">{{ c }}</div><div class="muted">{{ role }}</div></div>{% endfor %}</div>
+  {% endif %}
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">Tipografías</h3>
+      {% for f in d.fonts[:12] %}<div style="font-family:'{{ f }}',system-ui;font-size:18px;margin:4px 0">{{ f }} <span class="muted small" style="font-family:system-ui">— Aa Bb Cc 123</span></div>{% else %}{{ empty() }}{% endfor %}
+      <div class="small" style="margin-top:8px">Origen: {{ tags(d.font_sources) }}</div>
+    </div>
+    <div class="card"><dl class="kv">
+      <dt>Frameworks CSS</dt><dd>{{ tags(d.css_frameworks, "acc") }}</dd>
+      <dt>Iconos</dt><dd>{{ tags(d.icon_libraries) }}</dd>
+      <dt>Breakpoints</dt><dd>{{ tags(d.breakpoints[:16]) }}</dd>
+      <dt>Responsive</dt><dd>{{ "Sí" if d.responsive else "No" }}{% if d.viewport %} · <code>{{ d.viewport }}</code>{% endif %}</dd>
+      <dt>Modo oscuro</dt><dd>{{ "Sí (prefers-color-scheme)" if d.dark_mode else "No detectado" }}</dd>
+      <dt>Theme color</dt><dd>{% if d.theme_color %}<span class="tag" style="border-left:14px solid {{ d.theme_color }}">{{ d.theme_color }}</span>{% else %}—{% endif %}</dd>
+      <dt>Favicon</dt><dd>{% if d.favicon %}<a href="{{ d.favicon }}" target="_blank" rel="noopener">{{ d.favicon|short_url(60) }}</a>{% else %}—{% endif %}</dd>
+      <dt>Estructura</dt><dd>{% for k, v in d.landmarks.items() %}<span class="tag {{ 'good' if v else 'bad' }}">&lt;{{ k }}&gt;</span>{% else %}{{ empty() }}{% endfor %}</dd>
+    </dl></div>
+  </div>
+</section>
+
+<!-- 7 SEO -->
+{% set seo = r.seo %}
+<section id="seo">
+  <h2>7. Contenido y SEO</h2>
+  {% if seo %}
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="margin-top:0">Problemas detectados</h3>
+      {% for i in seo.get("issues") or [] %}
+      <div class="issue"><span class="tag {{ 'bad' if i.severity == 'alta' else ('mid' if i.severity == 'media' else '') }}">{{ i.severity }}</span>
+        <details><summary>{{ i.message }} {% if i.urls %}<span class="muted small">({{ i.urls|length }})</span>{% endif %}</summary>
+          {% for u in (i.urls or [])[:25] %}<div class="small"><a href="{{ u }}" target="_blank" rel="noopener">{{ u }}</a></div>{% endfor %}
+        </details></div>
+      {% else %}{{ empty("Sin problemas SEO relevantes") }}{% endfor %}
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Estadísticas</h3>
+      <dl class="kv">{% for k, v in (seo.get("stats") or {}).items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% else %}{{ empty() }}{% endfor %}</dl>
+    </div>
+  </div>
+  {% else %}{{ empty("Análisis SEO no disponible") }}{% endif %}
+  {% if home and (home.og or home.json_ld_types or home.headings) %}
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3 style="margin-top:0">Portada: Open Graph y datos estructurados</h3>
+      <dl class="kv">{% for k, v in home.og.items() %}<dt>og:{{ k }}</dt><dd>{{ v|truncate(140) }}</dd>{% endfor %}
+      <dt>JSON-LD</dt><dd>{{ tags(home.json_ld_types) }}</dd>
+      <dt>hreflang</dt><dd>{{ tags(home.hreflang) }}</dd></dl>
+    </div>
+    <div class="card"><h3 style="margin-top:0">Portada: jerarquía de encabezados</h3>
+      {% for h in home.headings[:30] %}<div style="padding-left:{{ (h.level - 1) * 14 }}px" class="small"><span class="tag">H{{ h.level }}</span>{{ h.text|truncate(90) }}</div>{% else %}{{ empty() }}{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<!-- 8 SEGURIDAD -->
+{% set sec = r.security %}
+<section id="seguridad">
+  <h2>8. Seguridad (análisis pasivo)</h2>
+  {% if sec %}
+  <div class="kpis">
+    <div class="kpi"><div class="v">{{ "Sí" if sec.get("https") else "No" }}</div><div class="l">HTTPS</div></div>
+    <div class="kpi"><div class="v">{{ sec.get("score", 0) }}</div><div class="l">Puntuación</div></div>
+    <div class="kpi"><div class="v">{{ (sec.get("missing_headers") or [])|length }}</div><div class="l">Cabeceras ausentes</div></div>
+    <div class="kpi"><div class="v">{{ (sec.get("mixed_content") or [])|length }}</div><div class="l">Contenido mixto</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3 style="margin-top:0">Cabeceras de seguridad</h3>
+      <table><tbody>{% for h, v in security_headers.items() %}<tr><td><code>{{ h }}</code></td><td>{% if v %}<span class="tag good">presente</span> <span class="small muted"><code>{{ v|truncate(80) }}</code></span>{% else %}<span class="tag bad">ausente</span>{% endif %}</td></tr>{% else %}<tr><td>{{ empty() }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    <div class="card"><h3 style="margin-top:0">Problemas</h3>
+      {% for i in sec.get("issues") or [] %}<div class="issue"><span class="tag {{ 'bad' if i.severity == 'alta' else ('mid' if i.severity == 'media' else '') }}">{{ i.severity }}</span><div>{{ i.message }}{% if i.urls %}<div class="small muted">{{ i.urls[:3]|join(", ") }}</div>{% endif %}</div></div>{% else %}{{ empty("Sin problemas detectados") }}{% endfor %}
+      {% if sec.get("cookie_issues") %}<h3>Cookies</h3><ul class="bullets small">{% for c in sec.get("cookie_issues")[:20] %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+      {% if sec.get("mixed_content") %}<h3>Contenido mixto (HTTP en HTTPS)</h3>{% for u in sec.get("mixed_content")[:20] %}<div class="small"><code>{{ u }}</code></div>{% endfor %}{% endif %}
+    </div>
+  </div>
+  {% else %}{{ empty("Análisis de seguridad no disponible") }}{% endif %}
+</section>
+
+<!-- 9 RENDIMIENTO -->
+{% set pf = r.performance %}
+<section id="rendimiento">
+  <h2>9. Rendimiento</h2>
+  {% if pf %}
+  <div class="kpis">
+    <div class="kpi"><div class="v">{{ pf.get("avg_ms", 0)|ms }}</div><div class="l">Respuesta media</div></div>
+    <div class="kpi"><div class="v">{{ pf.get("p95_ms", 0)|ms }}</div><div class="l">p95</div></div>
+    <div class="kpi"><div class="v">{{ pf.get("max_ms", 0)|ms }}</div><div class="l">Máximo</div></div>
+    <div class="kpi"><div class="v">{{ pf.get("avg_bytes", 0)|bytes }}</div><div class="l">Peso medio HTML</div></div>
+    <div class="kpi"><div class="v">{{ pf.get("compressed_pct", 0) }}%</div><div class="l">Comprimidas</div></div>
+    {% if pf.get("avg_load_ms") %}<div class="kpi"><div class="v">{{ pf.get("avg_load_ms")|ms }}</div><div class="l">Carga en navegador</div></div>{% endif %}
+    {% if pf.get("avg_resources") %}<div class="kpi"><div class="v">{{ pf.get("avg_resources") }}</div><div class="l">Recursos / página</div></div>{% endif %}
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3 style="margin-top:0">Páginas más lentas</h3>
+      <table><tbody>{% for p in pf.get("slowest") or [] %}<tr><td class="small"><a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.url|short_url(60) }}</a></td><td class="num">{{ p.ms|ms }}</td></tr>{% else %}<tr><td>{{ empty() }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    <div class="card"><h3 style="margin-top:0">Páginas más pesadas</h3>
+      <table><tbody>{% for p in pf.get("heaviest") or [] %}<tr><td class="small"><a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.url|short_url(60) }}</a></td><td class="num">{{ p.bytes|bytes }}</td></tr>{% else %}<tr><td>{{ empty() }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    <div class="card"><dl class="kv">
+      <dt>Compresión</dt><dd>{% for k, v in (pf.get("compression") or {}).items() %}<span class="tag">{{ k }} × {{ v }}</span>{% endfor %}</dd>
+      <dt>Protocolo HTTP</dt><dd>{% for k, v in (pf.get("http_versions") or {}).items() %}<span class="tag">{{ k }} × {{ v }}</span>{% endfor %}</dd>
+      <dt>Motor</dt><dd>{{ pf.get("rendered_pages", 0) }} con navegador · {{ pf.get("http_pages", 0) }} solo HTTP</dd>
+      <dt>Transferido total</dt><dd>{{ pf.get("total_bytes", 0)|bytes }}</dd>
+    </dl></div>
+    <div class="card"><h3 style="margin-top:0">Errores de consola JS</h3>
+      {% for u, e in console_errors[:25] %}<div class="small"><code>{{ e|truncate(140) }}</code> <span class="muted">{{ u|short_url(40) }}</span></div>{% else %}{{ empty("Sin errores de consola capturados") }}{% endfor %}
+    </div>
+  </div>
+  {% else %}{{ empty() }}{% endif %}
+</section>
+
+<!-- 10 INVENTARIO -->
+<section id="inventario">
+  <h2>10. Inventario</h2>
+  <div class="toolbar">
+    <input id="inv-q" type="search" placeholder="Filtrar por URL, título, área…">
+    <select id="inv-status"><option value="">Todos los estados</option><option value="2">2xx</option><option value="3">3xx</option><option value="4">4xx</option><option value="5">5xx</option><option value="0">Error</option></select>
+    <select id="inv-type"><option value="">Todos los tipos</option>{% for t in inventory|map(attribute="type")|unique|sort %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+    <span class="muted small" style="align-self:center"><span id="inv-count">{{ inventory|length }}</span> de {{ inventory|length }}</span>
+  </div>
+  <div class="table-wrap" style="max-height:640px"><table id="inv-table" class="sortable-table">
+    <thead><tr><th class="sortable">Estado</th><th class="sortable">URL</th><th class="sortable">Título</th><th class="sortable">Tipo</th><th class="sortable">Área</th><th class="sortable">Prof.</th><th class="sortable">Tiempo</th><th class="sortable">Peso</th><th class="sortable">Palabras</th><th>Motor</th></tr></thead>
+    <tbody>{% for p in inventory %}<tr data-search="{{ (p.url ~ ' ' ~ p.title ~ ' ' ~ p.area)|lower }}" data-status-group="{{ (p.status|string)[0] if p.status else '0' }}" data-type="{{ p.type }}">
+      <td class="num {{ p.status|status_class }}" data-v="{{ p.status }}">{{ p.status or "ERR" }}</td>
+      <td class="small"><a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.path }}</a>{% if p.error %}<div class="st-err small">{{ p.error|truncate(80) }}</div>{% endif %}</td>
+      <td class="small">{{ p.title|truncate(60) }}</td><td>{{ p.type }}</td><td><code>{{ p.area }}</code></td>
+      <td class="num">{{ p.depth }}</td><td class="num" data-v="{{ p.ms }}">{{ p.ms|ms }}</td><td class="num" data-v="{{ p.bytes }}">{{ p.bytes|bytes }}</td><td class="num">{{ p.words }}</td>
+      <td>{% if p.rendered %}<span class="tag acc">JS</span>{% else %}<span class="tag">HTTP</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3 style="margin-top:0">Enlaces rotos / con error ({{ r.broken_links|length }})</h3>
+      {% if r.broken_links %}<table><thead><tr><th>Estado</th><th>URL</th><th>Enlazado desde</th></tr></thead><tbody>
+      {% for b in r.broken_links[:100] %}<tr><td class="st-err">{{ b.get("status") or "ERR" }}</td><td class="small"><code>{{ b.get("url", "")|truncate(80) }}</code>{% if b.get("error") %}<div class="muted">{{ b.get("error")|truncate(80) }}</div>{% endif %}</td><td class="small">{{ (b.get("from") or "")|short_url(40) }}</td></tr>{% endfor %}
+      </tbody></table>{% else %}{{ empty("Ninguno") }}{% endif %}
+    </div>
+    <div class="card"><h3 style="margin-top:0">Dominios externos ({{ r.external_domains|length }})</h3>
+      {% if r.external_domains %}<table><tbody>{% for dmn, n in r.external_domains.items() %}<tr><td><code>{{ dmn }}</code></td><td class="num">{{ n }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty("Ninguno") }}{% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- APÉNDICE -->
+<section id="apendice">
+  <h2>Apéndice</h2>
+  <div class="grid g2">
+    <div class="card"><h3 style="margin-top:0">robots.txt</h3>{% if r.robots_txt %}<pre>{{ r.robots_txt|truncate(6000) }}</pre>{% else %}{{ empty("No disponible") }}{% endif %}</div>
+    <div class="card"><h3 style="margin-top:0">Sitemaps ({{ r.sitemap_urls }} URL)</h3>{% for s in r.sitemaps %}<div class="small"><a href="{{ s }}" target="_blank" rel="noopener">{{ s }}</a></div>{% else %}{{ empty("No encontrados") }}{% endfor %}
+      <h3>Configuración del rastreo</h3><dl class="kv small">{% for k, v in r.config.items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>
+    </div>
+  </div>
+  {% if r.errors %}<div class="card" style="margin-top:14px"><h3 style="margin-top:0">Incidencias del rastreo ({{ r.errors|length }})</h3><ul class="bullets small">{% for e in r.errors[:200] %}<li><code>{{ e }}</code></li>{% endfor %}</ul></div>{% endif %}
+  <p class="muted small" style="margin-top:20px">Generado por PaginaBuscador Crawler · análisis pasivo de contenido público.</p>
+</section>

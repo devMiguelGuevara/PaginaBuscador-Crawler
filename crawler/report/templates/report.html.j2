@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reporte de sitio — {{ r.domain }}</title>
+<style>
+{% include "_styles.css.j2" %}
+</style>
+</head>
+<body>
+{% set yesno = {True: "Sí", False: "No"} %}
+{% set auth_labels = {
+  "login_page": "Página de login", "register_page": "Página de registro", "password_reset": "Recuperar contraseña",
+  "login_form": "Formulario de login", "register_form": "Formulario de registro", "sso_provider": "Proveedor SSO / OAuth",
+  "session_cookie": "Cookie de sesión", "jwt_storage": "Token JWT en storage", "protected_area": "Zona protegida",
+  "captcha": "Captcha", "mfa_hint": "Indicio 2FA / MFA", "logout": "Cerrar sesión", "account_area": "Área de cuenta",
+  "admin_area": "Área de administración", "auth_service": "Servicio de identidad", "auth_api": "API de autenticación",
+  "login_entry": "Acceso a login desde la navegación", "register_entry": "Acceso a registro desde la navegación"} %}
+{% macro empty(msg="No detectado") %}<div class="empty">{{ msg }}</div>{% endmacro %}
+{% macro tags(items, cls="") %}{% if items %}{% for i in items %}<span class="tag {{ cls }}">{{ i }}</span>{% endfor %}{% else %}{{ empty() }}{% endif %}{% endmacro %}
+{% macro page_link(seg, pg) %}{% if pg %}<a class="seg" href="{{ pg.url }}" target="_blank" rel="noopener">{{ seg }}</a> <span class="{{ pg.status|status_class }} small">{{ pg.status or "err" }}</span>{% if pg.title %} <span class="muted small">— {{ pg.title|truncate(70) }}</span>{% endif %}{% else %}<span class="seg">{{ seg }}</span>{% endif %}{% endmacro %}
+{% macro render_tree(node, depth=0) %}
+<ul>
+{% for seg, child in node["_children"].items() %}
+<li>{% if child["_children"] %}<details {% if depth < 1 %}open{% endif %}><summary>{{ page_link(seg ~ "/", child["_page"]) }} <span class="muted small">({{ child["_children"]|length }})</span></summary>{{ render_tree(child, depth + 1) }}</details>{% else %}<span class="leaf"></span>{{ page_link(seg, child["_page"]) }}{% endif %}</li>
+{% endfor %}
+</ul>
+{% endmacro %}
+<div class="layout">
+<nav class="side" id="side">
+  <div class="brand">Análisis de sitio</div>
+  <div class="dom">{{ r.domain }}</div>
+  <a href="#resumen"><span class="n">1</span>Resumen ejecutivo</a>
+  <a href="#mapa"><span class="n">2</span>Mapa y áreas</a>
+  <a href="#tecnologias"><span class="n">3</span>Tecnologías</a>
+  <a href="#login"><span class="n">4</span>Login y usuarios</a>
+  <a href="#interaccion"><span class="n">5</span>Interacción</a>
+  <a href="#diseno"><span class="n">6</span>Diseño</a>
+  <a href="#seo"><span class="n">7</span>Contenido y SEO</a>
+  <a href="#seguridad"><span class="n">8</span>Seguridad</a>
+  <a href="#rendimiento"><span class="n">9</span>Rendimiento</a>
+  <a href="#inventario"><span class="n">10</span>Inventario</a>
+  <a href="#apendice"><span class="n">+</span>Apéndice</a>
+</nav>
+<main>
+<header class="top">
+  <h1>{{ (home.title if home and home.title else r.domain) }}</h1>
+  <div class="meta"><a href="{{ r.target }}" target="_blank" rel="noopener">{{ r.target }}</a> · {{ r.started_at }}{% if r.finished_at %} → {{ r.finished_at }}{% endif %} · {{ "%.1f"|format(r.duration_s or 0) }} s{% if r.site_type %} · {{ r.site_type }}{% endif %}</div>
+</header>
+
+<!-- 1 RESUMEN -->
+<section id="resumen">
+  <h2>1. Resumen ejecutivo</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="v">{{ r.pages|length }}</div><div class="l">Páginas analizadas</div></div>
+    <div class="kpi"><div class="v">{{ r.areas|length }}</div><div class="l">Áreas</div></div>
+    <div class="kpi"><div class="v">{{ r.technologies|length }}</div><div class="l">Tecnologías</div></div>
+    <div class="kpi"><div class="v">{{ r.forms|length }}</div><div class="l">Formularios únicos</div></div>
+    <div class="kpi"><div class="v">{{ r.api_endpoints|length }}</div><div class="l">Endpoints API</div></div>
+    <div class="kpi"><div class="v">{{ "Sí" if r.auth_summary.get("has_login") else "No" }}</div><div class="l">Login</div></div>
+    <div class="kpi"><div class="v">{{ rendered_count }}</div><div class="l">Renderizadas (JS)</div></div>
+    <div class="kpi"><div class="v">{{ r.broken_links|length }}</div><div class="l">Enlaces con error</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">Conclusiones</h3>
+      {% if r.summary %}<ul class="bullets">{% for b in r.summary %}<li>{{ b }}</li>{% endfor %}</ul>{% else %}{{ empty("Sin resumen") }}{% endif %}
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Puntuaciones</h3>
+      {% for s in r.scores %}
+      <div class="score {{ s.value|score_class }}">
+        <div class="row"><span>{{ s.name }}</span><span>{{ s.value }}/100</span></div>
+        <div class="bar"><span style="width:{{ s.value }}%"></span></div>
+        {% if s.notes %}<ul>{% for n in s.notes[:4] %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      {% else %}{{ empty("Sin puntuaciones") }}{% endfor %}
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="margin-top:0">Ficha del sitio</h3>
+    <dl class="kv">
+      <dt>URL objetivo</dt><dd>{{ r.target }}</dd>
+      <dt>Dominio</dt><dd>{{ r.domain }}</dd>
+      <dt>Tipo de sitio</dt><dd>{{ r.site_type or "No determinado" }}</dd>
+      {% if home %}
+      <dt>Título</dt><dd>{{ home.title or "—" }}</dd>
+      <dt>Descripción</dt><dd>{{ home.meta_description or "—" }}</dd>
+      <dt>Idioma</dt><dd>{{ home.lang or "—" }}</dd>
+      {% if home.generator %}<dt>Generador</dt><dd>{{ home.generator }}</dd>{% endif %}
+      {% endif %}
+      {% for k, v in r.server_info.items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}
+    </dl>
+  </div>
+</section>
+
+<!-- 2 MAPA -->
+<section id="mapa">
+  <h2>2. Mapa del sitio y áreas</h2>
+  <div class="small muted" style="margin-bottom:8px">Códigos de estado:
+    {% for k, v in status_counts.items() %}<span class="tag {{ 'good' if k.startswith('2') else ('mid' if k.startswith('3') else 'bad') }}">{{ k }} × {{ v }}</span>{% endfor %}
+  </div>
+  <div class="grid g2">
+    <div class="card tree">
+      <h3 style="margin-top:0">Árbol de URLs</h3>
+      {% if r.pages %}<div class="small"><strong>{{ r.domain }}</strong>{% if tree["_page"] %} {{ page_link("/", tree["_page"]) }}{% endif %}</div>{{ render_tree(tree) }}{% else %}{{ empty() }}{% endif %}
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Menú de navegación principal</h3>
+      {% if r.nav_menu %}<ul class="bullets">{% for l in r.nav_menu %}<li><a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.text or l.url }}</a> <span class="muted small">{{ l.url|short_url }}</span></li>{% endfor %}</ul>{% else %}{{ empty() }}{% endif %}
+    </div>
+  </div>
+  <h3>Áreas / secciones</h3>
+  {% if r.areas %}
+  <div class="table-wrap"><table class="sortable-table">
+    <thead><tr><th class="sortable">Área</th><th class="sortable">Ruta</th><th class="sortable">Páginas</th><th>Tipos de página</th><th>En menú</th><th>Ejemplos</th></tr></thead>
+    <tbody>{% for a in r.areas %}<tr>
+      <td><strong>{{ a.name }}</strong></td><td><code>{{ a.path_prefix }}</code></td><td class="num">{{ a.pages }}</td>
+      <td>{% for t, c in a.page_types.items() %}<span class="tag">{{ t }} {{ c }}</span>{% endfor %}</td>
+      <td>{{ yesno[a.in_nav] }}</td>
+      <td class="small">{% for u in a.sample_urls[:3] %}<a href="{{ u }}" target="_blank" rel="noopener">{{ u|short_url(50) }}</a><br>{% endfor %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}{{ empty() }}{% endif %}
+</section>
+
+<!-- 3 TECNOLOGÍAS -->
+<section id="tecnologias">
+  <h2>3. Tecnologías</h2>
+  {% if tech_groups %}
+  <div class="grid g2">
+  {% for cat, items in tech_groups %}
+    <div class="card">
+      <h3 style="margin-top:0">{{ cat }} <span class="muted small">({{ items|length }})</span></h3>
+      <table><tbody>{% for t in items %}<tr>
+        <td style="width:40%"><strong>{% if t.website %}<a href="{{ t.website }}" target="_blank" rel="noopener">{{ t.name }}</a>{% else %}{{ t.name }}{% endif %}</strong>{% if t.version %} <span class="tag acc">v{{ t.version }}</span>{% endif %}<div class="small muted">confianza {{ t.confidence }}%</div></td>
+        <td class="small muted">{% for e in t.evidence[:5] %}<div><code>{{ e|truncate(110) }}</code></div>{% endfor %}</td>
+      </tr>{% endfor %}</tbody></table>
+    </div>
+  {% endfor %}
+  </div>
+  {% else %}{{ empty("No se detectaron tecnologías") }}{% endif %}
+</section>
+
+<!-- 4 LOGIN -->
+{% set a = r.auth_summary %}
+<section id="login">
+  <h2>4. Login y usuarios</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="v">{{ "Sí" if a.get("has_login") else "No" }}</div><div class="l">Login</div></div>
+    <div class="kpi"><div class="v">{{ "Sí" if a.get("has_register") else "No" }}</div><div class="l">Registro</div></div>
+    <div class="kpi"><div class="v">{{ "Sí" if a.get("has_password_reset") else "No" }}</div><div class="l">Recuperar contraseña</div></div>
+    <div class="kpi"><div class="v">{{ "Sí" if a.get("mfa") else "No" }}</div><div class="l">2FA / MFA</div></div>
+    <div class="kpi"><div class="v">{{ (a.get("protected_urls") or [])|length }}</div><div class="l">URL protegidas</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><dl class="kv">
+      <dt>Proveedores SSO</dt><dd>{{ tags(a.get("sso_providers"), "acc") }}</dd>
+      <dt>Servicios de identidad</dt><dd>{{ tags(a.get("auth_services"), "acc") }}</dd>
+      <dt>Mecanismo de sesión</dt><dd>{{ tags(a.get("session_mechanisms")) }}</dd>
+      <dt>Captcha</dt><dd>{{ tags(a.get("captcha")) }}</dd>
+      <dt>Funciones de usuario</dt><dd>{{ tags(a.get("user_features")) }}</dd>
+    </dl></div>
+    <div class="card"><dl class="kv">
+      <dt>URLs de login</dt><dd>{% for u in (a.get("login_urls") or [])[:10] %}<div><a href="{{ u }}" target="_blank" rel="noopener">{{ u }}</a></div>{% else %}{{ empty() }}{% endfor %}{% if (a.get("login_urls") or [])|length > 10 %}<div class="muted small">y {{ (a.get("login_urls")|length) - 10 }} más</div>{% endif %}</dd>
+      <dt>URLs de registro</dt><dd>{% for u in (a.get("register_urls") or [])[:10] %}<div><a href="{{ u }}" target="_blank" rel="noopener">{{ u }}</a></div>{% else %}{{ empty() }}{% endfor %}{% if (a.get("register_urls") or [])|length > 10 %}<div class="muted small">y {{ (a.get("register_urls")|length) - 10 }} más</div>{% endif %}</dd>
+      <dt>Zonas protegidas</dt><dd>{% for u in (a.get("protected_urls") or [])[:15] %}<div><a href="{{ u }}" target="_blank" rel="noopener">{{ u }}</a></div>{% else %}{{ empty() }}{% endfor %}</dd>
+    </dl></div>
+  </div>
+  {% if a.get("notes") %}<div class="card" style="margin-top:14px"><h3 style="margin-top:0">Observaciones</h3><ul class="bullets">{% for n in a.get("notes") %}<li>{{ n }}</li>{% endfor %}</ul></div>{% endif %}
+  <h3>Hallazgos de autenticación</h3>
+  {% if auth_by_kind %}
+  <div class="table-wrap"><table class="sortable-table">
+    <thead><tr><th class="sortable">Tipo</th><th>Detalle</th><th>URL</th><th>Evidencia</th></tr></thead>
+    <tbody>{% for kind, items in auth_by_kind.items() %}{% for f in items[:40] %}<tr>
+      <td><span class="tag acc">{{ auth_labels.get(kind, kind) }}</span></td><td>{{ f.detail }}</td>
+      <td class="small">{% if f.url %}<a href="{{ f.url }}" target="_blank" rel="noopener">{{ f.url|short_url(60) }}</a>{% endif %}</td>
+      <td class="small muted"><code>{{ f.evidence|truncate(120) }}</code></td>
+    </tr>{% endfor %}{% endfor %}</tbody>
+  </table></div>
+  {% else %}{{ empty("No se detectaron mecanismos de autenticación en las páginas públicas") }}{% endif %}
+</section>
+
+{% include "_sections_b.html.j2" %}
+</main>
+</div>
+<script>
+{% include "_script.js.j2" %}
+</script>
+</body>
+</html>
