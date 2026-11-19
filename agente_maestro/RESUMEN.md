@@ -17,7 +17,7 @@ Modo de render híbrido: HTTP rápido (`httpx` + `selectolax`) y Chromium (`play
 
 ## Estado
 
-**Activo, el proyecto más completo de la carpeta.** Código de sep-2026; último reporte generado el 5-oct-2026. Tiene 13 archivos de tests. No está en git.
+**Activo, el proyecto más completo de la carpeta.** Código de sep-2026; último reporte generado el 5-oct-2026. Tiene 13 archivos de tests. Repositorio público: https://github.com/devMiguelGuevara/PaginaBuscador-Crawler
 
 Reportes ya generados en `output/`: app.lab10.ai, books.toscrape.com, cheatsheetseries.owasp.org, mattilda.io.
 
@@ -53,8 +53,7 @@ El `README.md` del proyecto tiene la tabla completa de opciones.
 
 ## Observaciones y pendientes
 
-- Ponerlo en git.
-- `output/` crece con cada análisis; conviene limpiarlo o excluirlo del control de versiones.
+- `output/` crece con cada análisis; conviene limpiarlo de vez en cuando. Está en `.gitignore`, así que no se sube.
 
 ## Reglas para el agente
 
